@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Ошибка приглашения - SchoolFlow{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="alert alert-danger">
+            <h4 class="alert-heading">Ошибка</h4>
+            <p>{{ error }}</p>
+            <hr>
+            <p class="mb-0">Свяжитесь с администратором для получения нового приглашения.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

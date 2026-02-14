@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Удаление приглашения - SchoolFlow{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h1>Удалить приглашение?</h1>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <p><strong>Email:</strong> {{ object.email }}</p>
+                <p><strong>Роль:</strong> {{ object.role.get_code_display }}</p>
+                <p><strong>Срок действия:</strong> {{ object.expires_at|date:"d.m.Y H:i" }}</p>
+            </div>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-danger">Удалить</button>
+                <a href="{% url 'users:invite_list' %}" class="btn btn-outline-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

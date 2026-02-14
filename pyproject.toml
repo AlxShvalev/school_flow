@@ -1,0 +1,13 @@
+[project]
+name = "school-flow"
+version = "0.1.0"
+description = "Project for school workflow management"
+requires-python = ">=3.13"
+dependencies = [
+    "argon2-cffi>=25.1.0",
+    "django==5.2",
+    "pillow>=12.0.0",
+    "pre-commit>=4.5.1",
+    "psycopg2-binary>=2.9.11",
+    "python-dotenv>=1.2.1",
+]

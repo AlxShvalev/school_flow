@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Приглашения - SchoolFlow{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Приглашения</h1>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'users:invite_create' %}" class="btn btn-primary">Создать приглашение</a>
+    </div>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Email</th>
+            <th>Роль</th>
+            <th>Профиль</th>
+            <th>Статус</th>
+            <th>Срок действия</th>
+            <th>Создано</th>
+            <th>Использовано</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for invite in invites %}
+        <tr>
+            <td>{{ invite.email }}</td>
+            <td>{{ invite.role.get_code_display }}</td>
+            <td>
+                {% if invite.profile %}
+                    {{ invite.profile.full_name }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if invite.used_at %}
+                    <span class="badge bg-success">Использовано</span>
+                {% elif invite.is_valid %}
+                    <span class="badge bg-primary">Активно</span>
+                {% else %}
+                    <span class="badge bg-danger">Истекло</span>
+                {% endif %}
+            </td>
+            <td>{{ invite.expires_at|date:"d.m.Y H:i" }}</td>
+            <td>{{ invite.created_at|date:"d.m.Y" }}</td>
+            <td>{{ invite.used_at|date:"d.m.Y" }}</td>
+            <td>
+                {% if invite.profile %}
+                    <a href="{% url 'users:profile_edit' invite.profile.pk %}" class="btn btn-sm btn-outline-primary">Редактировать</a>
+                {% endif %}
+                {% if invite.is_valid and not invite.used_at %}
+                    <form method="post" action="{% url 'users:invite_extend' invite.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Продлить</button>
+                    </form>
+                {% endif %}
+                {% if not invite.used_at %}
+                    <a href="{% url 'users:invite_delete' invite.pk %}" class="btn btn-sm btn-outline-danger">Удалить</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" class="text-center">Приглашений пока нет</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if page_obj.has_other_pages %}
+<nav>
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page=1">First</a></li>
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+        {% endif %}
+        
+        <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+        
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

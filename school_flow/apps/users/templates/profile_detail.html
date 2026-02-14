@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Профиль пользователя {{ object.full_name }}{% endblock %}
+
+{% block content %}
+<h1 class="h1">Профиль</h1>
+
+<p><strong>Фамилия:</strong> {{ object.last_name }}</p>
+<p><strong>Имя:</strong> {{ object.first_name }}</p>
+<p><strong>Отчество:</strong> {{ object.middle_name|default:"—" }}</p>
+<p><strong>Дата рождения:</strong> {{ object.birth_date|date:"d.m.Y"|default:"—" }}</p>
+
+{% if object.photo %}
+    <img src="{{ object.photo.url }}" width="200">
+{% endif %}
+
+{% if user.is_staff or user.is_administrator %}
+    <a href="{% url 'users:profile_edit' object.pk %}">Редактировать</a>
+{% endif %}
+{% endblock %}

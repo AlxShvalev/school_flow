@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация - SchoolFlow{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h1>Регистрация</h1>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Информация о приглашении</h5>
+                <p class="card-text">
+                    <strong>Email:</strong> {{ invite.email }}<br>
+                    <strong>Роль:</strong> {{ invite.role.get_code_display }}<br>
+                    <strong>Имя:</strong> {{ invite.profile.full_name }}
+                </p>
+            </div>
+        </div>
+        
+        <form method="post" class="card p-4">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label for="id_password" class="form-label">{{ form.password.label }}</label>
+                {{ form.password }}
+                {% if form.password.errors %}
+                    <div class="text-danger">{{ form.password.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                <label for="id_password_confirm" class="form-label">{{ form.password_confirm.label }}</label>
+                {{ form.password_confirm }}
+                {% if form.password_confirm.errors %}
+                    <div class="text-danger">{{ form.password_confirm.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
