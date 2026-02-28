@@ -15,7 +15,13 @@
     <img src="{{ object.photo.url }}" width="200">
 {% endif %}
 
-{% if user.is_staff or user.is_administrator %}
-    <a href="{% url 'users:profile_edit' object.pk %}">Редактировать</a>
-{% endif %}
+<div class="mt-3">
+    {% if not object.user %}
+        <a href="{% url 'users:invite_create' %}?profile={{ object.pk }}" class="btn btn-success">Отправить приглашение</a>
+    {% endif %}
+    
+    {% if user.is_staff or user.is_administrator %}
+        <a href="{% url 'users:profile_edit' object.pk %}" class="btn btn-primary">Редактировать</a>
+    {% endif %}
+</div>
 {% endblock %}

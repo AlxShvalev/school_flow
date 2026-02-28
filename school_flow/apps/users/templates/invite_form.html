@@ -17,6 +17,55 @@
             {% csrf_token %}
             
             <div class="mb-3">
+                <label for="id_profile" class="form-label">{{ form.profile.label }}</label>
+                {{ form.profile }}
+                {% if form.profile.errors %}
+                    <div class="text-danger">{{ form.profile.errors }}</div>
+                {% endif %}
+                <small class="text-muted">Выберите существующий профиль или создайте новый</small>
+            </div>
+            
+            <div id="new-profile-fields">
+                <hr>
+                <h5>Данные профиля</h5>
+                
+                <div class="mb-3">
+                    <label for="id_first_name" class="form-label">{{ form.first_name.label }}</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                        <div class="text-danger">{{ form.first_name.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="id_last_name" class="form-label">{{ form.last_name.label }}</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                        <div class="text-danger">{{ form.last_name.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="id_middle_name" class="form-label">{{ form.middle_name.label }}</label>
+                    {{ form.middle_name }}
+                    {% if form.middle_name.errors %}
+                        <div class="text-danger">{{ form.middle_name.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="id_date_of_birth" class="form-label">{{ form.date_of_birth.label }}</label>
+                    {{ form.date_of_birth }}
+                    {% if form.date_of_birth.errors %}
+                        <div class="text-danger">{{ form.date_of_birth.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <hr>
+            <h5>Данные для входа</h5>
+            
+            <div class="mb-3">
                 <label for="id_email" class="form-label">{{ form.email.label }}</label>
                 {{ form.email }}
                 {% if form.email.errors %}
@@ -29,41 +78,6 @@
                 {{ form.role }}
                 {% if form.role.errors %}
                     <div class="text-danger">{{ form.role.errors }}</div>
-                {% endif %}
-            </div>
-            
-            <hr>
-            <h5>Данные профиля</h5>
-            
-            <div class="mb-3">
-                <label for="id_first_name" class="form-label">{{ form.first_name.label }}</label>
-                {{ form.first_name }}
-                {% if form.first_name.errors %}
-                    <div class="text-danger">{{ form.first_name.errors }}</div>
-                {% endif %}
-            </div>
-            
-            <div class="mb-3">
-                <label for="id_last_name" class="form-label">{{ form.last_name.label }}</label>
-                {{ form.last_name }}
-                {% if form.last_name.errors %}
-                    <div class="text-danger">{{ form.last_name.errors }}</div>
-                {% endif %}
-            </div>
-            
-            <div class="mb-3">
-                <label for="id_middle_name" class="form-label">{{ form.middle_name.label }}</label>
-                {{ form.middle_name }}
-                {% if form.middle_name.errors %}
-                    <div class="text-danger">{{ form.middle_name.errors }}</div>
-                {% endif %}
-            </div>
-            
-            <div class="mb-3">
-                <label for="id_date_of_birth" class="form-label">{{ form.date_of_birth.label }}</label>
-                {{ form.date_of_birth }}
-                {% if form.date_of_birth.errors %}
-                    <div class="text-danger">{{ form.date_of_birth.errors }}</div>
                 {% endif %}
             </div>
             
@@ -84,4 +98,24 @@
         </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const profileSelect = document.getElementById('id_profile');
+    const newProfileFields = document.getElementById('new-profile-fields');
+    
+    function toggleFields() {
+        if (profileSelect && profileSelect.value) {
+            newProfileFields.style.display = 'none';
+        } else {
+            newProfileFields.style.display = 'block';
+        }
+    }
+    
+    if (profileSelect) {
+        profileSelect.addEventListener('change', toggleFields);
+        toggleFields();
+    }
+});
+</script>
 {% endblock %}

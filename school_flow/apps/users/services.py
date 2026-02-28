@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.core.mail import send_mail
-from django.template.loader import render_to_string
 from django.utils import timezone
 from datetime import timedelta
 
@@ -12,8 +11,9 @@ class InviteService:
     def create_invite(
         email: str,
         role_code: str,
-        profile_data: dict,
-        created_by: User,
+        profile_data: dict = None,
+        profile: "UserProfile" = None,
+        created_by: "User" = None,
         days_valid: int = None,
     ):
         if days_valid is None:
@@ -21,7 +21,8 @@ class InviteService:
 
         role = Role.objects.get(code=role_code)
 
-        profile = UserProfile.objects.create(**profile_data)
+        if not profile:
+            profile = UserProfile.objects.create(**profile_data)
 
         invite, _ = UserInvite.objects.update_or_create(
             email=email,
@@ -36,6 +37,23 @@ class InviteService:
         InviteService._send_invite_email(invite)
 
         return invite
+
+    @staticmethod
+    def send_invite_for_profile(
+        profile: "UserProfile",
+        email: str,
+        role_code: str,
+        created_by: "User" = None,
+        days_valid: int = None,
+    ):
+        """Send invitation for an existing profile without user."""
+        return InviteService.create_invite(
+            email=email,
+            role_code=role_code,
+            profile=profile,
+            created_by=created_by,
+            days_valid=days_valid,
+        )
 
     @staticmethod
     def _send_invite_email(invite: UserInvite):

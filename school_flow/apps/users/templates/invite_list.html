@@ -56,14 +56,8 @@
             <td>{{ invite.created_at|date:"d.m.Y" }}</td>
             <td>{{ invite.used_at|date:"d.m.Y" }}</td>
             <td>
-                {% if invite.profile %}
-                    <a href="{% url 'users:profile_edit' invite.profile.pk %}" class="btn btn-sm btn-outline-primary">Редактировать</a>
-                {% endif %}
-                {% if invite.is_valid and not invite.used_at %}
-                    <form method="post" action="{% url 'users:invite_extend' invite.pk %}" class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-outline-secondary">Продлить</button>
-                    </form>
+                {% if not invite.used_at %}
+                    <a href="{% url 'users:invite_edit' invite.pk %}" class="btn btn-sm btn-outline-primary">Редактировать</a>
                 {% endif %}
                 {% if not invite.used_at %}
                     <a href="{% url 'users:invite_delete' invite.pk %}" class="btn btn-sm btn-outline-danger">Удалить</a>

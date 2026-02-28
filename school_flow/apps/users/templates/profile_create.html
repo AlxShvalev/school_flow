@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Создание профиля{% endblock %}
+
+{% block content %}
+<h1 class="h1">Создание профиля</h1>
+
+<p class="text-muted">Создайте профиль пользователя. После этого можно будет отправить приглашение.</p>
+
+<form method="post" enctype="multipart/form-data" class="mt-4">
+    {% csrf_token %}
+
+    {{ form.as_p }}
+
+    <button type="submit" class="btn btn-primary">Создать профиль</button>
+    <a href="{% url 'users:profile_list' %}" class="btn btn-secondary">Отмена</a>
+</form>
+{% endblock %}

@@ -8,14 +8,19 @@ from django.views.generic import (
     UpdateView,
     ListView,
     DeleteView,
-    CreateView,
 )
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import models
 
-from .forms import LoginForm, UserProfileForm, InviteCreateForm, UserRegistrationForm
+from .forms import (
+    LoginForm,
+    UserProfileForm,
+    InviteCreateForm,
+    InviteUpdateForm,
+    UserRegistrationForm,
+)
 from .models import UserProfile, UserInvite, RoleCode, User, UserRole
 from .permissions import CanViewUserProfileMixin, CanCreateUserProfileMixin
 from .services import InviteService
@@ -62,9 +67,7 @@ class UserProfileDetailView(LoginRequiredMixin, DetailView):
 
 
 class UserProfileDetailByIdView(
-    LoginRequiredMixin,
-    CanViewUserProfileMixin,
-    DetailView,
+    LoginRequiredMixin, CanViewUserProfileMixin, DetailView
 ):
     model = UserProfile
     template_name = "profile_detail.html"
@@ -74,6 +77,42 @@ class UserProfileDetailByIdView(
         profile = get_object_or_404(UserProfile, pk=pk)
         self.check_permissions(self.request, profile)
         return profile
+
+
+class ProfileCreateView(LoginRequiredMixin, CanCreateUserProfileMixin, View):
+    template_name = "profile_create.html"
+
+    def get(self, request):
+        self.check_permissions(request)
+        form = UserProfileForm()
+        return render(request, self.template_name, {"form": form})
+
+    def post(self, request):
+        self.check_permissions(request)
+        form = UserProfileForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            profile = form.save()
+            messages.success(request, f"Профиль '{profile.full_name}' создан")
+            return redirect(reverse_lazy("users:profile_list"))
+
+        return render(request, self.template_name, {"form": form})
+
+
+class ProfileListView(LoginRequiredMixin, CanCreateUserProfileMixin, ListView):
+    model = UserProfile
+    template_name = "profile_list.html"
+    context_object_name = "profiles"
+    paginate_by = 20
+
+    def get_queryset(self):
+        self.check_permissions(self.request)
+        return UserProfile.objects.filter(user__isnull=True).order_by("-created_at")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["active_tab"] = "profiles"
+        return context
 
 
 @login_required
@@ -104,7 +143,17 @@ class InviteCreateView(LoginRequiredMixin, CanCreateUserProfileMixin, View):
 
     def get(self, request):
         self.check_permissions(request)
-        form = InviteCreateForm()
+        profile_id = request.GET.get("profile")
+        initial = {}
+
+        if profile_id:
+            try:
+                profile = UserProfile.objects.get(pk=profile_id, user__isnull=True)
+                initial["profile"] = profile
+            except UserProfile.DoesNotExist:
+                pass
+
+        form = InviteCreateForm(initial=initial)
         return render(request, self.template_name, {"form": form})
 
     def post(self, request):
@@ -112,20 +161,30 @@ class InviteCreateView(LoginRequiredMixin, CanCreateUserProfileMixin, View):
         form = InviteCreateForm(request.POST)
 
         if form.is_valid():
-            profile_data = {
-                "first_name": form.cleaned_data["first_name"],
-                "last_name": form.cleaned_data["last_name"],
-                "middle_name": form.cleaned_data.get("middle_name"),
-                "date_of_birth": form.cleaned_data.get("date_of_birth"),
-            }
+            profile = form.cleaned_data.get("profile")
 
-            InviteService.create_invite(
-                email=form.cleaned_data["email"],
-                role_code=form.cleaned_data["role"],
-                profile_data=profile_data,
-                created_by=request.user,
-                days_valid=form.cleaned_data["days_valid"],
-            )
+            if profile:
+                InviteService.send_invite_for_profile(
+                    profile=profile,
+                    email=form.cleaned_data["email"],
+                    role_code=form.cleaned_data["role"],
+                    created_by=request.user,
+                    days_valid=form.cleaned_data["days_valid"],
+                )
+            else:
+                profile_data = {
+                    "first_name": form.cleaned_data["first_name"],
+                    "last_name": form.cleaned_data["last_name"],
+                    "middle_name": form.cleaned_data.get("middle_name"),
+                    "date_of_birth": form.cleaned_data.get("date_of_birth"),
+                }
+                InviteService.create_invite(
+                    email=form.cleaned_data["email"],
+                    role_code=form.cleaned_data["role"],
+                    profile_data=profile_data,
+                    created_by=request.user,
+                    days_valid=form.cleaned_data["days_valid"],
+                )
 
             messages.success(
                 request, f"Приглашение отправлено на {form.cleaned_data['email']}"
@@ -211,14 +270,36 @@ class InviteDeleteView(LoginRequiredMixin, CanCreateUserProfileMixin, DeleteView
         return super().post(request, *args, **kwargs)
 
 
-class InviteExtendView(LoginRequiredMixin, CanCreateUserProfileMixin, View):
+class InviteUpdateView(LoginRequiredMixin, CanCreateUserProfileMixin, View):
+    template_name = "invite_edit.html"
+
+    def get(self, request, pk):
+        self.check_permissions(request)
+        invite = get_object_or_404(UserInvite, pk=pk)
+
+        if invite.used_at:
+            messages.error(request, "Нельзя редактировать использованное приглашение")
+            return redirect(reverse_lazy("users:invite_list"))
+
+        form = InviteUpdateForm(instance=invite)
+        return render(request, self.template_name, {"form": form, "invite": invite})
+
     def post(self, request, pk):
         self.check_permissions(request)
         invite = get_object_or_404(UserInvite, pk=pk)
-        days = int(request.POST.get("days", 7))
-        InviteService.extend_invite(invite, days)
-        messages.success(request, f"Срок действия приглашения продлён")
-        return redirect(reverse_lazy("users:invite_list"))
+
+        if invite.used_at:
+            messages.error(request, "Нельзя редактировать использованное приглашение")
+            return redirect(reverse_lazy("users:invite_list"))
+
+        form = InviteUpdateForm(request.POST, instance=invite)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Приглашение обновлено")
+            return redirect(reverse_lazy("users:invite_list"))
+
+        return render(request, self.template_name, {"form": form, "invite": invite})
 
 
 class UserProfileUpdateView(LoginRequiredMixin, CanCreateUserProfileMixin, UpdateView):

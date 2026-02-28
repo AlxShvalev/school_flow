@@ -1,7 +1,9 @@
 from django import forms
 from django.conf import settings
+from django.utils import timezone
+from datetime import timedelta
 
-from .models import UserProfile, Role, RoleCode
+from .models import UserProfile, UserInvite, Role, RoleCode
 
 
 class LoginForm(forms.Form):
@@ -42,8 +44,22 @@ class UserProfileForm(forms.ModelForm):
 
 
 class InviteCreateForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["profile"].queryset = UserProfile.objects.filter(user__isnull=True)
+
+    profile = forms.ModelChoiceField(
+        label="Профиль",
+        queryset=UserProfile.objects.none(),
+        required=False,
+        empty_label="-- Создать новый профиль --",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+
     email = forms.EmailField(
-        label="Email", widget=forms.EmailInput(attrs={"class": "form-control"})
+        label="Email",
+        required=False,
+        widget=forms.EmailInput(attrs={"class": "form-control"}),
     )
 
     role = forms.ChoiceField(
@@ -60,12 +76,14 @@ class InviteCreateForm(forms.Form):
     first_name = forms.CharField(
         label="Имя",
         max_length=30,
+        required=False,
         widget=forms.TextInput(attrs={"class": "form-control"}),
     )
 
     last_name = forms.CharField(
         label="Фамилия",
         max_length=30,
+        required=False,
         widget=forms.TextInput(attrs={"class": "form-control"}),
     )
 
@@ -90,16 +108,94 @@ class InviteCreateForm(forms.Form):
         widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
 
+    def clean(self):
+        cleaned_data = super().clean()
+        profile = cleaned_data.get("profile")
+        email = cleaned_data.get("email")
+        first_name = cleaned_data.get("first_name")
+        last_name = cleaned_data.get("last_name")
+
+        if not profile and not (first_name and last_name):
+            raise forms.ValidationError("Выберите профиль или заполните ФИО")
+
+        if not profile and not email:
+            raise forms.ValidationError("Укажите email для отправки приглашения")
+
+        if email:
+            from .models import UserInvite
+
+            if UserInvite.objects.filter(email=email, used_at__isnull=True).exists():
+                raise forms.ValidationError(
+                    "Приглашение для этого email уже отправлено"
+                )
+            from .models import User
+
+            if User.objects.filter(email=email).exists():
+                raise forms.ValidationError("Пользователь с этим email уже существует")
+
+        return cleaned_data
+
+
+class InviteUpdateForm(forms.ModelForm):
+    days_valid = forms.IntegerField(
+        label="Срок действия (дней)",
+        required=False,
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    )
+
+    class Meta:
+        model = UserInvite
+        fields = ["email", "profile", "role"]
+        labels = {
+            "email": "Email",
+            "profile": "Профиль",
+            "role": "Роль",
+        }
+        widgets = {
+            "email": forms.EmailInput(attrs={"class": "form-control"}),
+            "profile": forms.Select(attrs={"class": "form-control"}),
+            "role": forms.Select(attrs={"class": "form-control"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["profile"].queryset = UserProfile.objects.filter(
+            user__isnull=True
+        ) | UserProfile.objects.filter(pk=self.instance.profile_id)
+
+        if self.instance.expires_at:
+            remaining_days = (self.instance.expires_at - timezone.now()).days
+            self.initial["days_valid"] = max(1, remaining_days)
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        days_valid = self.cleaned_data.get("days_valid")
+        if days_valid:
+            instance.expires_at = timezone.now() + timedelta(days=days_valid)
+        if commit:
+            instance.save()
+        return instance
+
     def clean_email(self):
         email = self.cleaned_data.get("email")
-        from .models import UserInvite
+        if email:
+            from .models import UserInvite, User
 
-        if UserInvite.objects.filter(email=email, used_at__isnull=True).exists():
-            raise forms.ValidationError("Приглашение для этого email уже отправлено")
-        from .models import User
+            exists_invite = UserInvite.objects.filter(
+                email=email, used_at__isnull=True
+            ).exclude(pk=self.instance.pk)
+            if exists_invite.exists():
+                raise forms.ValidationError(
+                    "Приглашение для этого email уже отправлено"
+                )
 
-        if User.objects.filter(email=email).exists():
-            raise forms.ValidationError("Пользователь с этим email уже существует")
+            exists_user = (
+                User.objects.filter(email=email)
+                .exclude(pk=self.instance.profile.user_id)
+                .exists()
+            )
+            if exists_user:
+                raise forms.ValidationError("Пользователь с этим email уже существует")
         return email
 
 

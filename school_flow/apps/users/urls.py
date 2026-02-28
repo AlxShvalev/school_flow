@@ -20,18 +20,28 @@ urlpatterns = [
         views.UserProfileUpdateView.as_view(),
         name="profile_edit",
     ),
+    path(
+        "profiles/create/",
+        views.ProfileCreateView.as_view(),
+        name="profile_create",
+    ),
+    path(
+        "profiles/",
+        views.ProfileListView.as_view(),
+        name="profile_list",
+    ),
     # Invites (admin)
     path("invites/", views.InviteListView.as_view(), name="invite_list"),
     path("invites/create/", views.InviteCreateView.as_view(), name="invite_create"),
     path(
+        "invites/<uuid:pk>/edit/",
+        views.InviteUpdateView.as_view(),
+        name="invite_edit",
+    ),
+    path(
         "invites/<uuid:pk>/delete/",
         views.InviteDeleteView.as_view(),
         name="invite_delete",
-    ),
-    path(
-        "invites/<uuid:pk>/extend/",
-        views.InviteExtendView.as_view(),
-        name="invite_extend",
     ),
     # Registration by invite
     path(
