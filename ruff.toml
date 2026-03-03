@@ -1,0 +1,42 @@
+# Same as Black.
+line-length = 100
+indent-width = 4
+extend-exclude = ["corncrake/clients/migrations/*.py"]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+[lint]
+# https://docs.astral.sh/ruff/rules/
+select = [
+  "I",
+  "F",
+  "E",
+  "W",
+  "N",
+  "UP",
+  "B",
+  "LOG",
+  # TODO: Fix calls to logging with f-strings
+  # "G",
+  "T20",
+  "PT",
+  "Q",
+  "RET",
+  "SIM",
+  "TD",
+  "PGH",
+  "FLY",
+  "FURB",
+  "RUF",
+  "PL",
+  # TODO: Fix all Django related problems
+  # "DJ",
+  # TODOL Fix all datetime related problems
+  # "DTZ"
+]
